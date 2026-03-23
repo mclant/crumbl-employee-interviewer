@@ -487,7 +487,7 @@ export default function InterviewPage() {
 					/>
 				)}
 
-				{!isStreamReady && stage !== "complete" && (
+				{!isStreamReady && (
 					<div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background rounded-2xl">
 						{cameraError ? (
 							<div className="text-center space-y-4 px-6 max-w-md">
