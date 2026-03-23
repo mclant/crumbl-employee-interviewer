@@ -9,6 +9,7 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import IconWordmark from "@/components/icons/IconWordmark";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ type InterviewStage =
 	| "countdown"
 	| "recording"
 	| "uploading"
+	| "ready"
 	| "complete";
 
 // ── Candidate info form (shown before camera) ──────────────────────────
@@ -51,7 +53,10 @@ function CandidateForm({
 
 	return (
 		<div className="flex flex-col items-center justify-center min-h-screen px-6 animate-fade-up">
-			<Card className="max-w-md w-full bg-transparent border-none ring-0 shadow-none">
+			<Card className="max-w-md w-full bg-transparent border-none ring-0 shadow-none flex flex-col items-center justify-center">
+				<div className="px-8 bg-primary">
+					<IconWordmark className="w-32 h-16 text-black" />
+				</div>
 				<CardHeader className="text-center pb-2">
 					<CardTitle className="font-display text-5xl italic text-foreground tracking-tight">
 						Welcome
@@ -62,8 +67,7 @@ function CandidateForm({
 						It only takes a few minutes.
 					</CardDescription>
 				</CardHeader>
-
-				<CardContent className="space-y-6">
+				<CardContent className="space-y-6 w-full">
 					<div className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor={nameId} className="text-muted-foreground">
@@ -129,8 +133,8 @@ function CountdownOverlay({
 	question: Question;
 }) {
 	return (
-		<div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-			<p className="text-muted-foreground text-lg mb-4 max-w-lg text-center px-6 animate-fade-up">
+		<div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md">
+			<p className="text-foreground text-4xl mb-4 max-w-lg text-center px-6 animate-fade-up">
 				{question.text}
 			</p>
 			<div className="relative">
@@ -139,7 +143,7 @@ function CountdownOverlay({
 				</span>
 				<div className="absolute inset-0 rounded-full border-2 border-primary/40 animate-pulse-ring" />
 			</div>
-			<p className="text-muted-foreground mt-6 text-sm tracking-wide uppercase">
+			<p className="text-foreground mt-6 text-sm tracking-wide uppercase">
 				Get ready to answer
 			</p>
 		</div>
@@ -195,6 +199,47 @@ function UploadingOverlay({
 						? "Submitting your responses..."
 						: "Saving response..."}
 			</p>
+		</div>
+	);
+}
+
+// ── Break screen between questions ─────────────────────────────────────
+function ReadyScreen({
+	questionIndex,
+	totalQuestions,
+	isPractice,
+	onContinue,
+}: {
+	questionIndex: number;
+	totalQuestions: number;
+	isPractice: boolean;
+	onContinue: () => void;
+}) {
+	return (
+		<div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md animate-fade-up">
+			<Badge
+				variant="secondary"
+				className="h-auto bg-background/50 backdrop-blur-md rounded-full px-4 py-2 border-none mb-6"
+			>
+				<span className="text-foreground/80 text-sm">
+					{isPractice ? "Practice" : "Question"} {questionIndex + 1} /{" "}
+					{totalQuestions}
+				</span>
+			</Badge>
+
+			<p className="text-foreground text-2xl font-display italic tracking-tight mb-6">
+				When you're ready, continue to the next question.
+			</p>
+
+			<Button
+				onClick={onContinue}
+				className="px-10 h-14 rounded-2xl text-lg font-semibold transition-all duration-300
+					bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg shadow-primary/20
+					hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
+			>
+				Continue
+				<ChevronRight className="ml-2 w-5 h-5" />
+			</Button>
 		</div>
 	);
 }
@@ -339,6 +384,12 @@ export default function InterviewPage() {
 		await startCamera();
 	}, [startCamera]);
 
+	// ── Continue from break screen to next question ────────────────
+	const handleContinueFromBreak = useCallback(() => {
+		setCountdown(3);
+		setStage("countdown");
+	}, []);
+
 	// ── Countdown 3-2-1 then start recording ─────────────────────
 	useEffect(() => {
 		if (stage !== "countdown") return;
@@ -354,27 +405,6 @@ export default function InterviewPage() {
 		const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
 		return () => clearTimeout(timer);
 	}, [stage, countdown, currentQuestion, startRecording]);
-
-	// ── Recording timer ──────────────────────────────────────────
-	useEffect(() => {
-		if (stage !== "recording") return;
-
-		timerRef.current = setInterval(() => {
-			setSecondsLeft((prev) => {
-				if (prev <= 1) {
-					// Time's up — stop recording
-					clearInterval(timerRef.current!);
-					handleFinishQuestion();
-					return 0;
-				}
-				return prev - 1;
-			});
-		}, 1000);
-
-		return () => {
-			if (timerRef.current) clearInterval(timerRef.current);
-		};
-	}, [stage]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// ── Finish a question: stop recording, upload, advance ───────
 	const handleFinishQuestion = useCallback(async () => {
@@ -432,8 +462,7 @@ export default function InterviewPage() {
 			setStage("complete");
 		} else {
 			setCurrentQuestionIndex((i) => i + 1);
-			setCountdown(3);
-			setStage("countdown");
+			setStage("ready");
 		}
 	}, [
 		stopRecording,
@@ -443,6 +472,32 @@ export default function InterviewPage() {
 		stopCamera,
 		isPracticeMode,
 	]);
+
+	// ── Recording timer ──────────────────────────────────────────
+	useEffect(() => {
+		if (stage !== "recording") return;
+
+		timerRef.current = setInterval(() => {
+			setSecondsLeft((prev) => {
+				if (prev <= 1) {
+					clearInterval(timerRef.current!);
+					return 0;
+				}
+				return prev - 1;
+			});
+		}, 1000);
+
+		return () => {
+			if (timerRef.current) clearInterval(timerRef.current);
+		};
+	}, [stage]);
+
+	// ── Auto-finish when timer reaches zero ──────────────────────
+	useEffect(() => {
+		if (stage === "recording" && secondsLeft === 0) {
+			handleFinishQuestion();
+		}
+	}, [stage, secondsLeft, handleFinishQuestion]);
 
 	// ── Render ───────────────────────────────────────────────────
 
@@ -465,7 +520,7 @@ export default function InterviewPage() {
 	return (
 		<div className="flex flex-col h-screen w-screen bg-background">
 			{/* Video zone — padded with rounded corners */}
-			<div className="relative flex-shrink-0 mx-4 mt-4 rounded-2xl overflow-hidden h-[65vh]">
+			<div className="relative flex-shrink-0 mx-2 mt-2 rounded-2xl overflow-hidden h-[75vh]">
 				<video
 					ref={videoRef}
 					className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
@@ -484,6 +539,15 @@ export default function InterviewPage() {
 						questionIndex={currentQuestionIndex}
 						totalQuestions={questions.length}
 						isPractice={isPracticeMode}
+					/>
+				)}
+
+				{stage === "ready" && (
+					<ReadyScreen
+						questionIndex={currentQuestionIndex}
+						totalQuestions={questions.length}
+						isPractice={isPracticeMode}
+						onContinue={handleContinueFromBreak}
 					/>
 				)}
 
@@ -583,13 +647,10 @@ export default function InterviewPage() {
 			{/* Bottom text zone — solid background for readability */}
 			<div className="flex-1 flex flex-col items-center justify-center px-6 py-4 overflow-y-auto">
 				{isStreamReady && stage === "intro" && (
-					<div className="text-center space-y-6 animate-fade-up max-w-md w-full">
+					<div className="text-center space-y-3 animate-fade-up max-w-md w-full">
 						<div className="space-y-2">
 							<p className="text-muted-foreground text-sm tracking-wide uppercase">
 								Camera is ready
-							</p>
-							<p className="text-muted-foreground text-sm">
-								Make sure you're in a quiet, well-lit space
 							</p>
 						</div>
 
@@ -622,10 +683,7 @@ export default function InterviewPage() {
 						<div className="space-y-1">
 							<p className="text-muted-foreground text-sm">
 								{INTERVIEW_QUESTIONS.length} questions ·{" "}
-								{INTERVIEW_QUESTIONS[0].timeLimit}s each · no do-overs
-							</p>
-							<p className="text-muted-foreground/60 text-xs">
-								Try a few warm-up questions first — nothing is recorded.
+								{INTERVIEW_QUESTIONS[0].timeLimit}s each
 							</p>
 						</div>
 					</div>
@@ -641,45 +699,16 @@ export default function InterviewPage() {
 								{currentQuestion.context}
 							</p>
 						)}
-						{!showSkipConfirm ? (
-							<Button
-								onClick={() => setShowSkipConfirm(true)}
-								variant="secondary"
-								className="mt-2 px-6 h-11 rounded-xl bg-secondary hover:bg-secondary/80
+						<Button
+							onClick={handleFinishQuestion}
+							variant="secondary"
+							className="mt-2 px-6 h-11 rounded-xl bg-secondary hover:bg-secondary/80
                            text-foreground text-sm font-medium
                            transition-all duration-200 border-none"
-							>
-								{isLastQuestion ? "Finish Interview" : "Next Question"}
-								<SkipForward className="ml-2 w-4 h-4" />
-							</Button>
-						) : (
-							<div className="mt-2 space-y-2 animate-fade-up">
-								<p className="text-muted-foreground text-sm font-medium">
-									Are you sure? You can't redo this question.
-								</p>
-								<div className="flex items-center justify-center gap-3">
-									<Button
-										onClick={() => setShowSkipConfirm(false)}
-										variant="secondary"
-										className="px-5 h-10 rounded-xl bg-secondary hover:bg-secondary/80
-                               text-muted-foreground text-sm font-medium
-                               transition-all duration-200 border-none"
-									>
-										<X className="mr-1.5 w-3.5 h-3.5" />
-										Cancel
-									</Button>
-									<Button
-										onClick={handleFinishQuestion}
-										className="px-5 h-10 rounded-xl bg-primary hover:bg-primary/80
-                               text-primary-foreground text-sm font-medium
-                               transition-all duration-200 border-none"
-									>
-										Yes, move on
-										<SkipForward className="ml-1.5 w-3.5 h-3.5" />
-									</Button>
-								</div>
-							</div>
-						)}
+						>
+							{isLastQuestion ? "Finish Interview" : "Next Question"}
+							<SkipForward className="ml-2 w-4 h-4" />
+						</Button>
 					</div>
 				)}
 			</div>

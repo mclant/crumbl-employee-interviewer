@@ -90,19 +90,33 @@ serve(async (req) => {
 		return new Response("ok", { headers: corsHeaders });
 	}
 
+	let candidateId: string | null = null;
+	let questionId: string | null = null;
+
 	try {
-		const { candidateId, questionId, questionText, videoPath } =
-			await req.json();
+		const body = await req.json();
+		candidateId = body.candidateId;
+		questionId = body.questionId;
+		const { questionText, videoPath } = body;
 
 		const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-		// 1. Create a processing record
-		await supabase.from("responses").insert({
-			candidate_id: candidateId,
-			question_id: questionId,
-			video_path: videoPath,
-			processing_status: "processing",
-		});
+		// 1. Upsert a processing record (handles re-submissions gracefully)
+		const { error: insertError } = await supabase.from("responses").upsert(
+			{
+				candidate_id: candidateId,
+				question_id: questionId,
+				video_path: videoPath,
+				processing_status: "processing",
+				scores: null,
+				processed_at: null,
+			},
+			{ onConflict: "candidate_id,question_id" },
+		);
+
+		if (insertError) {
+			throw new Error(`Failed to create response record: ${insertError.message}`);
+		}
 
 		// 2. Download the video from storage
 		const { data: fileData, error: downloadError } = await supabase.storage
@@ -198,12 +212,56 @@ serve(async (req) => {
 			console.error("Failed to update scores:", updateError);
 		}
 
+		// 7. Recompute the candidate's aggregate overall_score
+		const { data: allResponses } = await supabase
+			.from("responses")
+			.select("scores")
+			.eq("candidate_id", candidateId)
+			.eq("processing_status", "complete");
+
+		if (allResponses && allResponses.length > 0) {
+			const scoredResponses = allResponses.filter(
+				(r) => r.scores?.overall_score != null,
+			);
+
+			if (scoredResponses.length > 0) {
+				const avgScore =
+					scoredResponses.reduce(
+						(sum, r) => sum + Number(r.scores.overall_score),
+						0,
+					) / scoredResponses.length;
+
+				const { error: candidateUpdateError } = await supabase
+					.from("candidates")
+					.update({ overall_score: Math.round(avgScore * 10) / 10 })
+					.eq("id", candidateId);
+
+				if (candidateUpdateError) {
+					console.error("Failed to update candidate overall_score:", candidateUpdateError);
+				}
+			}
+		}
+
 		return new Response(JSON.stringify({ success: true, scores }), {
 			headers: { ...corsHeaders, "Content-Type": "application/json" },
 			status: 200,
 		});
 	} catch (error) {
 		console.error("analyze-response error:", error);
+
+		if (candidateId && questionId) {
+			try {
+				const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+				await supabase
+					.from("responses")
+					.update({ processing_status: "error" })
+					.eq("candidate_id", candidateId)
+					.eq("question_id", questionId);
+			} catch (updateErr) {
+				console.error("Failed to mark response as error:", updateErr);
+			}
+		}
+
 		return new Response(
 			JSON.stringify({ success: false, error: (error as Error).message }),
 			{

@@ -63,7 +63,7 @@ export default function DashboardPage() {
 				</div>
 			</aside>
 
-			<main className="flex-1 overflow-y-auto w-full flex justify-center">
+			<main className="flex-1 overflow-y-auto w-full flex justify-center pb-6">
 				{activeTab === "calendar" && <CalendarPlaceholder />}
 				{activeTab === "candidates" && <CandidatesList />}
 			</main>

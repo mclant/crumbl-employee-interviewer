@@ -158,7 +158,7 @@ function ResponseCard({ response }: { response: CandidateResponse }) {
 	const scores = response.scores;
 
 	return (
-		<Card className="bg-card">
+		<Card className="bg-card ring-border">
 			<CardHeader>
 				<div className="flex items-start justify-between gap-4">
 					<div>
@@ -395,7 +395,7 @@ export function CandidateDetail({ candidate, onBack }: CandidateDetailProps) {
 					No responses recorded yet.
 				</p>
 			) : (
-				<div className="space-y-4">
+				<div className="space-y-4 pb-6">
 					{responses.map((response) => (
 						<ResponseCard key={response.id} response={response} />
 					))}
