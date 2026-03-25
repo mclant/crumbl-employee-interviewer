@@ -158,7 +158,7 @@ function ResponseCard({ response }: { response: CandidateResponse }) {
 	const scores = response.scores;
 
 	return (
-		<Card className="bg-card ring-border">
+		<Card className="bg-card">
 			<CardHeader>
 				<div className="flex items-start justify-between gap-4">
 					<div>

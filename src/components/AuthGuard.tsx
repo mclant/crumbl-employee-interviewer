@@ -65,7 +65,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   return (
     <div className="flex items-center justify-center min-h-screen px-6 bg-background">
-      <Card className="max-w-sm w-full bg-card border-none ring-1 ring-foreground/10">
+      <Card className="max-w-sm w-full bg-card border-none">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <Lock className="w-5 h-5 text-primary" />
