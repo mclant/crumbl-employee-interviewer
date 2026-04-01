@@ -7,28 +7,17 @@ export interface Question {
 
 export const INTERVIEW_QUESTIONS: Question[] = [
 	{
-		id: "intro",
-		text: "Tell us about yourself and why you want to work here.",
+		id: "why-crumbl",
+		text: "Why do you want to work at Crumbl?",
 		timeLimit: 60,
-		context: "This is your chance to make a great first impression.",
+		context:
+			"Tell us what draws you to Crumbl and what excites you about working here.",
 	},
 	{
-		id: "customer-service",
-		text: "Describe a time you went above and beyond for a customer or someone you were helping.",
-		timeLimit: 60,
-		context: "Be specific — tell us what happened and what you did.",
-	},
-	{
-		id: "teamwork",
+		id: "disagreement",
 		text: "How do you handle a disagreement with a coworker?",
 		timeLimit: 60,
 		context: "Walk us through your approach with a real example if you can.",
-	},
-	{
-		id: "reliability",
-		text: "What does being reliable mean to you, and how do you show it?",
-		timeLimit: 60,
-		context: "Think about consistency, punctuality, and follow-through.",
 	},
 ];
 

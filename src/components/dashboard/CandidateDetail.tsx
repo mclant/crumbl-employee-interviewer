@@ -54,11 +54,16 @@ type CandidateDetailProps = {
 };
 
 const SCORE_LABELS: Record<string, string> = {
+	confidence: "Confidence",
+	communication: "Communication",
+	friendliness: "Friendliness",
+	enthusiasm: "Enthusiasm",
+	relevance: "Relevance",
+	// Legacy keys from previous scoring prompt
 	communication_clarity: "Communication",
 	enthusiasm_energy: "Enthusiasm",
 	relevance_of_answer: "Relevance",
 	professionalism: "Professionalism",
-	confidence: "Confidence",
 };
 
 function ScoreBar({
