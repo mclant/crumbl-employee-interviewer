@@ -20,11 +20,11 @@ Analyze the video and evaluate the candidate on these dimensions. Score each fro
 Return ONLY valid JSON in this exact format:
 {
   "scores": {
-    "communication_clarity": { "score": 0, "reason": "" },
-    "enthusiasm_energy": { "score": 0, "reason": "" },
-    "relevance_of_answer": { "score": 0, "reason": "" },
-    "professionalism": { "score": 0, "reason": "" },
-    "confidence": { "score": 0, "reason": "" }
+    "confidence": { "score": 0, "reason": "" },
+    "communication": { "score": 0, "reason": "" },
+    "friendliness": { "score": 0, "reason": "" },
+    "enthusiasm": { "score": 0, "reason": "" },
+    "relevance": { "score": 0, "reason": "" }
   },
   "overall_score": 0,
   "summary": "",
